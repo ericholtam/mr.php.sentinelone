@@ -166,9 +166,9 @@ new Sentinelone_model;
                 });
 
                 // Format date
+                var last_seen = parseInt($('td:eq(10)', nRow).html());
                  if (last_seen) {
                     // The data coming in is UTC. This calculates the timezone difference
-                    var last_seen = parseInt($('td:eq(10)', nRow).html());
                     var now = new Date;
                     var utc_timestamp = Date.UTC(now.getFullYear(),now.getMonth(), now.getDate(), now.getHours(), now.getMinutes(), now.getSeconds(), now.getMilliseconds());
                     var epoch_tz_diff = (now.getTime() - utc_timestamp) / 1000;
