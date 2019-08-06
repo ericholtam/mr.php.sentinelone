@@ -6,6 +6,7 @@ import sys
 import os
 import plistlib
 import dateutil.parser as dp
+from distutils.version import LooseVersion
 
 def dict_clean(items):
     result = {}
@@ -24,23 +25,53 @@ def main():
             print 'Manual check: skipping'
             exit(0)
 
-    if os.path.isfile(s1_binary):
-        # Create cache dir if it does not exist
-        cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
-        if not os.path.exists(cachedir):
-            os.makedirs(cachedir)
+    # Create cache dir if it does not exist
+    cachedir = '%s/cache' % os.path.dirname(os.path.realpath(__file__))
+    if not os.path.exists(cachedir):
+        os.makedirs(cachedir)
 
-        summary_command = [s1_binary, 'summary', 'json']
-        task = subprocess.Popen(summary_command,
+
+    if os.path.isfile(s1_binary):
+        version_command = [s1_binary, 'version']
+        version_task = subprocess.Popen(version_command,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
+        (version, stderr) = version_task.communicate()
+        
+        if LooseVersion(version) < LooseVersion("3.2.0"):
+            summary_command = [s1_binary, 'summary', 'json']
+            task = subprocess.Popen(summary_command,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
 
-        (stdout, stderr) = task.communicate()
-        # Sentinel One's output has a header of "Summary information" that needs to be stripped off to be proper json
-        s1_summary = json.loads(stdout.split('\n',1)[1], object_pairs_hook=dict_clean)
-        # convert the ISO time to epoch time and store back in the variable
-        s1_summary['last-seen'] = dp.parse(s1_summary['last-seen']).strftime('%s')
+            (stdout, stderr) = task.communicate()
+            # Sentinel One's output has a header of "Summary information" that needs to be stripped off to be proper json
+            s1_summary = json.loads(stdout.split('\n',1)[1], object_pairs_hook=dict_clean)
+            # convert the ISO time to epoch time and store back in the variable
+            s1_summary['last-seen'] = dp.parse(s1_summary['last-seen']).strftime('%s')
+        else:
+            
+            summary_command = [s1_binary, 'status', '--filters', 'Agent,Management']
+            task = subprocess.Popen(summary_command,
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE)
 
+            (stdout, stderr) = task.communicate()
+            stdout = stdout.split('\n')
+            s1_summary = {}
+            for line in stdout:
+                #Strip all the whitespace in the formatted output
+                line = "".join(line.split())
+                #Break the line up into parts to make sure there are key and values
+                parts = line.split(':', 1)
+                # If the number of parts is less than 2 there's not a key/value pair
+                if len(parts) > 1:
+                    #Split the line of text into a dict for parsing
+                    line = dict([line.split(':', 1)])
+                    mydict = dict(line)
+                    for title, description in mydict.items():
+                        s1_summary[title] = description.strip()
+    
         # Write to disk
         output_plist = os.path.join(cachedir, 'sentinelone.plist')
         plistlib.writePlist(s1_summary, output_plist)
