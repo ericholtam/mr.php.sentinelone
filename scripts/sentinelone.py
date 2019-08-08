@@ -7,6 +7,8 @@ import os
 import plistlib
 import dateutil.parser as dp
 from distutils.version import LooseVersion
+import time
+
 
 def dict_clean(items):
     result = {}
@@ -70,7 +72,12 @@ def main():
                     line = dict([line.split(':', 1)])
                     mydict = dict(line)
                     for title, description in mydict.items():
-                        s1_summary[title] = description.strip()
+                        # For keys with dates, convert date format into epoch for processing on MR
+                        if title in 'LastSeen' or title in 'InstallDate':
+                            pattern = '%m/%d/%y,%I:%M:%S%p'
+                            s1_summary[title] = int(time.mktime(time.strptime(description.strip(), pattern)))
+                        else:
+                            s1_summary[title] = description.strip()
     
         # Write to disk
         output_plist = os.path.join(cachedir, 'sentinelone.plist')

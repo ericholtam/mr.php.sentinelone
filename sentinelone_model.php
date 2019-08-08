@@ -34,37 +34,77 @@ class Sentinelone_model extends \Model
         $parser->parse($data, CFPropertyList::FORMAT_XML);
         $plist = $parser->toArray();
 
-    // Delete previous set        
-    $this->deleteWhere('serial_number=?', $this->serial_number);
+    // If data is empty, throw error
+    if (! $data) {
+        // Throw error if no data
+        print_r("Error Processing Caching Module Request: No data found");
+    } else if (substr( $data, 174, 19 ) != '<key>Codesign</key>' ) { // Else if old style text, process with old text based handler
 
-        $translate = array(
-          'active-threats-present' => 'active_threats_present',
-          'agent-id' => 'agent_id',
-          'agent-running' => 'agent_running',
-          'agent-version' => 'agent_version',
-          'enforcing-security' => 'enforcing_security',
-          'last-seen' => 'last_seen',
-          'mgmt-url' => 'mgmt_url',
-          'self-protection-enabled' => 'self_protection_enabled'
-        );
+        // Delete previous set        
+        $this->deleteWhere('serial_number=?', $this->serial_number);
 
-        foreach ($translate as $search => $item) {
-            if (isset($plist[$search])) {
-                if ($plist[$search] === true) {
-                    $this->$item = 1;
-                } elseif ($plist[$search] === false) {
-                    $this->$item = 0;
+            $translate = array(
+              'active-threats-present' => 'active_threats_present',
+              'agent-id' => 'agent_id',
+              'agent-running' => 'agent_running',
+              'agent-version' => 'agent_version',
+              'enforcing-security' => 'enforcing_security',
+              'last-seen' => 'last_seen',
+              'mgmt-url' => 'mgmt_url',
+              'self-protection-enabled' => 'self_protection_enabled'
+            );
+
+            foreach ($translate as $search => $item) {
+                if (isset($plist[$search])) {
+                    if ($plist[$search] === true) {
+                        $this->$item = 1;
+                    } elseif ($plist[$search] === false) {
+                        $this->$item = 0;
+                    } else {
+                        $this->$item = $plist[$search];
+                    }
                 } else {
-                    $this->$item = $plist[$search];
+                    $this->$item = '';
                 }
-            } else {
-                $this->$item = '';
             }
-        }
-        $this->id = '';
-        $this->save();
-    }
+            $this->id = '';
+            $this->save();
+        } else { // Process data with new, fancy pants JSON handler
+               // Delete previous entries, bye bye data
+            $this->deleteWhere('serial_number=?', $this->serial_number);
 
+            $translate = array(
+              'Infected' => 'active_threats_present',
+              'ID' => 'agent_id',
+              'Ready' => 'agent_running',
+              'Version' => 'agent_version',
+              'Connected' => 'enforcing_security',
+              'LastSeen' => 'last_seen',
+              'Server' => 'mgmt_url',
+              'Protection' => 'self_protection_enabled'
+            );
+
+            foreach ($translate as $search => $item) {
+                if (isset($plist[$search])) {
+                    if ($plist[$search] === true) {
+                        $this->$item = 1;
+                    } elseif ($plist[$search] === yes) {
+                        $this->$item = 1;
+                    } elseif ($plist[$search] === false) {
+                        $this->$item = 0;
+                    } elseif ($plist[$search] === no) {
+                        $this->$item = 0;
+                    } else {
+                        $this->$item = $plist[$search];
+                    }
+                } else {
+                    $this->$item = '';
+                }
+            }
+            $this->id = '';
+            $this->save();
+         }
+    }
 
     public function get_active_threats_stats()
     {
