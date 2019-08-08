@@ -13,7 +13,6 @@ class Sentinelone_model extends \Model
         $this->rs['agent_id'] = '';
         $this->rs['agent_running'] = 0; //boolean
         $this->rs['agent_version'] = '';
-        $this->rs['enforcing_security'] = 0; //boolean
         $this->rs['last_seen'] = '';
         $this->rs['mgmt_url'] = '';
         $this->rs['self_protection_enabled'] = 0; //boolean
@@ -38,7 +37,7 @@ class Sentinelone_model extends \Model
     if (! $data) {
         // Throw error if no data
         print_r("Error Processing Caching Module Request: No data found");
-    } else if (substr( $data, 174, 19 ) != '<key>Codesign</key>' ) { // Else if old style text, process with old text based handler
+    } else if (substr( $data, 172, 19 ) != '<key>Codesign</key>' ) { // Else if old style text, process with old text based handler
 
         // Delete previous set        
         $this->deleteWhere('serial_number=?', $this->serial_number);
@@ -48,7 +47,6 @@ class Sentinelone_model extends \Model
               'agent-id' => 'agent_id',
               'agent-running' => 'agent_running',
               'agent-version' => 'agent_version',
-              'enforcing-security' => 'enforcing_security',
               'last-seen' => 'last_seen',
               'mgmt-url' => 'mgmt_url',
               'self-protection-enabled' => 'self_protection_enabled'
@@ -64,7 +62,7 @@ class Sentinelone_model extends \Model
                         $this->$item = $plist[$search];
                     }
                 } else {
-                    $this->$item = '';
+			$this->$item = '';
                 }
             }
             $this->id = '';
@@ -78,7 +76,6 @@ class Sentinelone_model extends \Model
               'ID' => 'agent_id',
               'Ready' => 'agent_running',
               'Version' => 'agent_version',
-              'Connected' => 'enforcing_security',
               'LastSeen' => 'last_seen',
               'Server' => 'mgmt_url',
               'Protection' => 'self_protection_enabled'
@@ -88,11 +85,13 @@ class Sentinelone_model extends \Model
                 if (isset($plist[$search])) {
                     if ($plist[$search] === true) {
                         $this->$item = 1;
-                    } elseif ($plist[$search] === yes) {
+                    } elseif ($plist[$search] === 'yes') {
+                        $this->$item = 1;
+                    } elseif ($plist[$search] === 'enabled') {
                         $this->$item = 1;
                     } elseif ($plist[$search] === false) {
                         $this->$item = 0;
-                    } elseif ($plist[$search] === no) {
+                    } elseif ($plist[$search] === 'no') {
                         $this->$item = 0;
                     } else {
                         $this->$item = $plist[$search];
