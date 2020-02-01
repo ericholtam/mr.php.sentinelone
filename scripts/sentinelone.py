@@ -39,6 +39,7 @@ def main():
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.PIPE)
         (version, stderr) = version_task.communicate()
+        version = version.split(" ")[1]
         
         if LooseVersion(version) < LooseVersion("3.2.0"):
             summary_command = [s1_binary, 'summary', 'json']
