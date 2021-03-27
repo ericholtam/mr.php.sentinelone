@@ -37,36 +37,6 @@ class Sentinelone_model extends \Model
     if (! $data) {
         // Throw error if no data
         print_r("Error Processing Caching Module Request: No data found");
-    } else if (substr( $data, 172, 19 ) != '<key>Codesign</key>' ) { // Else if old style text, process with old text based handler
-
-        // Delete previous set        
-        $this->deleteWhere('serial_number=?', $this->serial_number);
-
-            $translate = array(
-              'active-threats-present' => 'active_threats_present',
-              'agent-id' => 'agent_id',
-              'agent-running' => 'agent_running',
-              'agent-version' => 'agent_version',
-              'last-seen' => 'last_seen',
-              'mgmt-url' => 'mgmt_url',
-              'self-protection-enabled' => 'self_protection_enabled'
-            );
-
-            foreach ($translate as $search => $item) {
-                if (isset($plist[$search])) {
-                    if ($plist[$search] === true) {
-                        $this->$item = 1;
-                    } elseif ($plist[$search] === false) {
-                        $this->$item = 0;
-                    } else {
-                        $this->$item = $plist[$search];
-                    }
-                } else {
-			$this->$item = '';
-                }
-            }
-            $this->id = '';
-            $this->save();
         } else { // Process data with new, fancy pants JSON handler
                // Delete previous entries, bye bye data
             $this->deleteWhere('serial_number=?', $this->serial_number);
