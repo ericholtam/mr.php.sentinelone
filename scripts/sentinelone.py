@@ -76,7 +76,10 @@ def main():
                         # For keys with dates, convert date format into epoch for processing on MR
                         if title in 'LastSeen' or title in 'InstallDate':
                             pattern = '%m/%d/%y,%I:%M:%S%p'
-                            s1_summary[title] = int(time.mktime(time.strptime(description.strip(), pattern)))
+                            try:
+                                s1_summary[title] = int(time.mktime(time.strptime(description.strip(), pattern)))
+                            except ValueError:
+                                s1_summary[title] = 0
                         else:
                             s1_summary[title] = description.strip()
     
